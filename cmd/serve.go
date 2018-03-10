@@ -35,14 +35,14 @@ caracters it will send it as a concatenated message.`,
 		mbc := client.NewMessageBird(apiKey)
 		defer mbc.Close()
 
-		s, err := message.NewHandler(mbc)
+		mh, err := message.NewHandler(mbc)
 		if err != nil {
 			log.Fatalf("unable to create message handler: %v", err)
 			return
 		}
 
 		r := mux.NewRouter()
-		r.HandleFunc("/send", s.Procces).Methods(http.MethodPost)
+		r.HandleFunc("/", mh.SendMsg).Methods(http.MethodPost)
 
 		h := viper.GetString(keyHost)
 		p := viper.GetString(keyPort)
@@ -59,6 +59,8 @@ caracters it will send it as a concatenated message.`,
 	},
 }
 
+// init sets command flags, bind them to viper and adds the command to the base
+//command
 func init() {
 	cmdRoot.AddCommand(cmdServe)
 	cmdServe.Flags().StringP(keyHost, "H", "", "server address")

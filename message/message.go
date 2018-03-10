@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"math/rand"
+	"strconv"
 	"strings"
 	"unicode/utf8"
 )
@@ -16,6 +17,7 @@ const (
 	headerLength    = 03
 )
 
+//Message holds information of one message
 type Message struct {
 	Recipient  string `json:"recipient"`
 	Originator string `json:"originator"`
@@ -23,9 +25,12 @@ type Message struct {
 	UDH        string
 }
 
+//Validate checks wheather the message is composed by a valid phone number and
+//that nor recipient neither message text are empty and returns error if any of
+//the checks doesn't pass
 func (m *Message) Validate() error {
 	errMsg := []string{}
-	if m.Recipient == "" {
+	if err := validInterNum(m.Recipient); err != nil {
 		errMsg = append(errMsg, fmt.Sprintf("%s is not a valid recipient number", m.Recipient))
 	}
 	if m.Originator == "" {
@@ -40,12 +45,19 @@ func (m *Message) Validate() error {
 	return nil
 }
 
-func (m *Message) concatenate() (ms []Message) {
+//ExceedsLimit checks whether the lenght of the message exceeds the maximum limit
+func (m *Message) ExceedsLimit() bool {
+	return utf8.RuneCountInString(m.Message) > maxMsgLength
+}
+
+//Concatenate divides the message into an array of messages according to the
+//maximum length defined for concatenated messages,sets the UDH for all created
+//messages and format it's text as binary (hexadecimal representation)
+func (m *Message) Concatenate() (ms []Message) {
 	csms := randCSMSrefNum()
 	ss := splitString(m.Message, concatMsgLength)
 	for i, s := range ss {
-		udh := getUDH(csms, len(ss), i+1)
-		//binaryMsg := intoBinary(s)
+		udh := createUDH(csms, len(ss), i+1)
 		nm := Message{
 			Recipient:  m.Recipient,
 			Originator: m.Originator,
@@ -57,15 +69,14 @@ func (m *Message) concatenate() (ms []Message) {
 	return
 }
 
-func (m *Message) ExceedsLimit() bool {
-	return utf8.RuneCountInString(m.Message) > maxMsgLength
-}
-
-func getUDH(csms string, total, num int) string {
+//createUDH returns concatenated message UDH for a specified csms, total amount
+//of message and the position of the message in the sequence
+func createUDH(csms string, total, num int) string {
 	udh := fmt.Sprintf("%02d%02d%02d%s%02X%02X", udhLength, infoElementID, headerLength, csms, total, num)
 	return udh
 }
 
+//splitString splits string by specified length
 func splitString(s string, length int) (ss []string) {
 	if length < 1 {
 		return
@@ -87,6 +98,18 @@ func randCSMSrefNum() string {
 	return fmt.Sprintf("%02X", ri)
 }
 
-func intoBinary(s string) string {
-	return s
+//validInterNum validates if string is an international number and returns an
+//error in case the received string doesn't comply with the specified format,
+//a valid format is '+'followed by 7-15 digits
+func validInterNum(n string) error {
+	if _, err := strconv.Atoi(n); err != nil {
+		return errors.New("is not a number")
+	}
+	if n[0:1] != "+" {
+		return errors.New("is not in internatinal format, number has to start with '+'")
+	}
+	if len(n) < 8 || len(n) > 16 {
+		return errors.New("number does not have correct length")
+	}
+	return nil
 }

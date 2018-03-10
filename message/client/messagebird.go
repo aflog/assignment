@@ -40,8 +40,6 @@ func (c *mbClient) Send(m message.Message) error {
 			log.Printf("coul not send message %#v to MessageBird err: %s", msg, err.Error())
 		}
 		log.Printf("%#v", res)
-		log.Printf("%#v", params)
-		log.Printf("%#v", msg)
 	}(m)
 	return nil
 }

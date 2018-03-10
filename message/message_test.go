@@ -8,7 +8,7 @@ import (
 )
 
 func TestAddUDH(t *testing.T) {
-	udh := getUDH("a7", 3, 2)
+	udh := createUDH("a7", 3, 2)
 	assert.Equal(t, "050003a70302", udh)
 }
 
@@ -82,7 +82,7 @@ func TestValid(t *testing.T) {
 		},
 		{
 			name: "ok",
-			msg:  Message{Recipient: "123", Message: "test message", Originator: "test originator"},
+			msg:  Message{Recipient: "+31123456789", Message: "test message", Originator: "test originator"},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -103,23 +103,74 @@ func TestConcatenate(t *testing.T) {
 		Message:    "text of more then 160 caracters that needs to be splitted in multiple messages and should be prepended by User Data Header, more random text END OF FIRST here starts second message asdiy doi asdoi asd hoiasd oiasd hoiasdh husaudg asdoiha oiasd oiasd oihsad ihasd oiasdi asdoi doiasdi asdi asd END OF SECOND third final part",
 	}
 	expected := []string{
-		"text of more then 160 caracters that needs to be splitted in multiple messages and should be prepended by User Data Header, more random text END OF FIRST",
-		" here starts second message asdiy doi asdoi asd hoiasd oiasd hoiasdh husaudg asdoiha oiasd oiasd oihsad ihasd oiasdi asdoi doiasdi asdi asd END OF SECOND",
-		" third final part",
+		fmt.Sprintf("%x", "text of more then 160 caracters that needs to be splitted in multiple messages and should be prepended by User Data Header, more random text END OF FIRST"),
+		fmt.Sprintf("%x", " here starts second message asdiy doi asdoi asd hoiasd oiasd hoiasdh husaudg asdoiha oiasd oiasd oihsad ihasd oiasdi asdoi doiasdi asdi asd END OF SECOND"),
+		fmt.Sprintf("%x", " third final part"),
 	}
-	res := msg.concatenate()
+	res := msg.Concatenate()
 	assert.Len(t, res, 3)
 	csms := ""
 	for i, m := range res {
 		assert.Equal(t, msg.Recipient, m.Recipient)
 		assert.Equal(t, msg.Originator, m.Originator)
-		byteMsg := []byte(m.Message)
 		if i == 0 {
-			csms = string(byteMsg[6:8])
+			csms = m.UDH[6:8]
 		}
-		assert.Equal(t, expected[i], string(byteMsg[12:]))
-		assert.Equal(t, "050003", string(byteMsg[:6]))
-		assert.Equal(t, fmt.Sprintf("03%02d", i), string(byteMsg[8:12]))
-		assert.Equal(t, csms, string(byteMsg[6:8]))
+		assert.Equal(t, expected[i], m.Message)
+		assert.Equal(t, "050003", m.UDH[:6])
+		assert.Equal(t, fmt.Sprintf("03%02d", i+1), m.UDH[8:12])
+		assert.Equal(t, csms, m.UDH[6:8])
+	}
+}
+
+func TestValidNumber(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		num  string
+		err  bool
+	}{
+		{
+			name: "empty",
+			num:  "",
+			err:  true,
+		},
+		{
+			name: "not international format",
+			num:  "0678123456",
+			err:  true,
+		},
+		{
+			name: "with white spaces",
+			num:  "+31 123456789",
+			err:  true,
+		},
+		{
+			name: "non digits",
+			num:  "+asghjkjkjhsdkjasd",
+			err:  true,
+		},
+		{
+			name: "short",
+			num:  "+311234",
+			err:  true,
+		},
+		{
+			name: "long",
+			num:  "+3112345678901234",
+			err:  true,
+		},
+		{
+			name: "correct format",
+			num:  "+31123456789",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			err := validInterNum(test.num)
+			if test.err {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
 	}
 }

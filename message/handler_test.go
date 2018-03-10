@@ -35,7 +35,7 @@ func TestNew(t *testing.T) {
 	assert.NotNil(t, h)
 }
 
-func TestProccess(t *testing.T) {
+func TestSendMsg(t *testing.T) {
 	for _, test := range []struct {
 		name       string
 		json       string
@@ -49,7 +49,7 @@ func TestProccess(t *testing.T) {
 		},
 		{
 			name:       "invalid json",
-			json:       `{recipient:"31612345678","originator":"MessageBird","message":"This is a test message."}`,
+			json:       `{recipient:"+31612345678","originator":"MessageBird","message":"This is a test message."}`,
 			statusCode: http.StatusBadRequest,
 		},
 		{
@@ -59,17 +59,17 @@ func TestProccess(t *testing.T) {
 		},
 		{
 			name:       "ok",
-			json:       `{"recipient":"31612345678","originator":"MessageBird","message":"This is a test message."}`,
+			json:       `{"recipient":"+31612345678","originator":"MessageBird","message":"This is a test message."}`,
 			statusCode: http.StatusOK,
 		},
 		{
 			name:       "concatenated ok",
-			json:       `{"recipient":"31612345678","originator":"MessageBird","message":"text of more then 160 caracters that needs to be splitted in multiple messages and should be prepended by User Data Header, more random text END OF FIRST here starts second message asdiy doi asdoi asd hoiasd oiasd hoiasdh husaudg asdoiha oiasd oiasd oihsad ihasd oiasdi asdoi doiasdi asdi asd END OF SECOND third final part."}`,
+			json:       `{"recipient":"+31612345678","originator":"MessageBird","message":"text of more then 160 caracters that needs to be splitted in multiple messages and should be prepended by User Data Header, more random text END OF FIRST here starts second message asdiy doi asdoi asd hoiasd oiasd hoiasdh husaudg asdoiha oiasd oiasd oihsad ihasd oiasdi asdoi doiasdi asdi asd END OF SECOND third final part."}`,
 			statusCode: http.StatusOK,
 		},
 		{
 			name:       "client error",
-			json:       `{"recipient":"31612345678","originator":"MessageBird","message":"This is a test message."}`,
+			json:       `{"recipient":"+31612345678","originator":"MessageBird","message":"This is a test message."}`,
 			statusCode: http.StatusInternalServerError,
 			hErr:       true,
 		},
@@ -78,7 +78,7 @@ func TestProccess(t *testing.T) {
 			h, _ := NewHandler(NewClientMock(test.hErr))
 			w := httptest.NewRecorder()
 			r, _ := http.NewRequest("POST", "http://test.com", bytes.NewBufferString(test.json))
-			h.Procces(w, r)
+			h.SendMsg(w, r)
 			resp := w.Result()
 			body, _ := ioutil.ReadAll(resp.Body)
 			assert.Equal(t, test.statusCode, resp.StatusCode)
