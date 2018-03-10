@@ -19,7 +19,7 @@ Once a service is running you can send a message posting a request with
 All fields are required and recipient phone number has to be a valid
 international number in E.164 format without spaces.
 
-##MessageBird
+## MessageBird
 The MessageBird API limit (imaginary) is set to 1rps, for this reason a decision
 was taken not to wait for the MessageBird API response for returning the 200
 HTTP status, Therefore receiving 200 HTTP status means that message data
