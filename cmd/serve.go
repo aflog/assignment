@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 	"time"
@@ -31,7 +30,6 @@ caracters it will send it as a concatenated message.`,
 		if apiKey == "" {
 			log.Fatalf("value of %s is not set", keyAPIKey)
 		}
-		fmt.Println(apiKey)
 		mbc := client.NewMessageBird(apiKey)
 		defer mbc.Close()
 
@@ -64,7 +62,7 @@ caracters it will send it as a concatenated message.`,
 func init() {
 	cmdRoot.AddCommand(cmdServe)
 	cmdServe.Flags().StringP(keyHost, "H", "", "server address")
-	cmdServe.Flags().StringP(keyPort, "p", "8080", "port address")
+	cmdServe.Flags().StringP(keyPort, "p", "80", "port address")
 	cmdServe.Flags().String(keyAPIKey, "", "Message Bird API key")
 	err := viper.BindPFlags(cmdServe.Flags())
 	if err != nil {
